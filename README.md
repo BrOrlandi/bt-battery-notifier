@@ -2,6 +2,10 @@
 
 A lightweight macOS menubar app that monitors your Bluetooth devices and notifies you about battery levels when they connect or disconnect.
 
+<p align="center">
+  <img src="macos-app/Resources/images/screenshot.png" alt="BT Battery Notifier" />
+</p>
+
 ## Features
 
 - **Menubar battery display** — show battery levels for selected devices right in the menubar (icon, percentage, or both)
@@ -48,15 +52,15 @@ bash macos-app/uninstall.sh
 
 Click the battery icon in the menubar to configure:
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| Menubar devices | None | Select which devices show battery in the menubar |
-| Display mode | Icon + % | Choose icon only, percentage only, or both |
-| Always notify on disconnect | On | Send a notification every time a device disconnects |
-| Low battery notification | On | Notify when battery is below threshold on disconnect |
-| Battery threshold | 50% | Low battery level for notifications |
-| Notify on connect | Off | Send a notification when a device connects |
-| Launch at login | Off | Start the app automatically at login |
+| Setting                     | Default  | Description                                          |
+| --------------------------- | -------- | ---------------------------------------------------- |
+| Menubar devices             | None     | Select which devices show battery in the menubar     |
+| Display mode                | Icon + % | Choose icon only, percentage only, or both           |
+| Always notify on disconnect | On       | Send a notification every time a device disconnects  |
+| Low battery notification    | On       | Notify when battery is below threshold on disconnect |
+| Battery threshold           | 50%      | Low battery level for notifications                  |
+| Notify on connect           | Off      | Send a notification when a device connects           |
+| Launch at login             | Off      | Start the app automatically at login                 |
 
 ## How it works
 
