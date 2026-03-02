@@ -1,0 +1,5 @@
+node_modules/
+swift/bt_battery
+logs/
+*.log
+.DS_Store
