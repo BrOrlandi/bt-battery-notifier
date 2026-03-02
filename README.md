@@ -14,12 +14,21 @@ A lightweight macOS menubar app that monitors your Bluetooth devices and notifie
 - **Launch at login** — start automatically when you log in
 - **Menubar only** — runs quietly in the menubar with no dock icon
 
-## Requirements
+## Download
 
-- macOS 13.0 (Ventura) or later
-- Xcode Command Line Tools (`xcode-select --install`)
+Download the latest DMG from the [Releases page](https://github.com/BrOrlandi/notify-bt-battery/releases).
 
-## Install
+1. Open the DMG and drag **BT Battery** to Applications
+2. Launch from Applications
+3. On first launch, grant Bluetooth and Notification permissions when prompted
+
+> **Note:** The DMG is built for Apple Silicon (M1/M2/M3/M4) only. If you need an Intel version, please [open an issue](https://github.com/BrOrlandi/notify-bt-battery/issues).
+
+> **Note:** This app is not signed with an Apple Developer ID. On first open, macOS may block it — right-click > Open, or allow it in System Settings > Privacy & Security.
+
+## Build from source
+
+**Requirements:** macOS 13.0 (Ventura) or later, Xcode Command Line Tools (`xcode-select --install`)
 
 ```bash
 git clone https://github.com/BrOrlandi/notify-bt-battery.git
