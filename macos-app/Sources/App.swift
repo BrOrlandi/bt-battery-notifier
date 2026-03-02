@@ -81,14 +81,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         btImage?.isTemplate = true
         button.image = btImage
 
-        // Collect connected devices selected for menubar display
-        let connectedDevices: [(String, BluetoothMonitor.DeviceState)] = settings.menubarDeviceAddresses
+        // Collect selected devices for menubar display (connected or with cached battery)
+        let selectedDevices: [(String, BluetoothMonitor.DeviceState)] = settings.menubarDeviceAddresses
             .compactMap { address in
-                guard let device = monitor.state[address], device.connected else { return nil }
+                guard let device = monitor.state[address] else { return nil }
                 return (address, device)
             }
 
-        guard !connectedDevices.isEmpty else {
+        // Filter to devices that have battery data to show
+        let devicesWithBattery = selectedDevices.filter { (_, device) in
+            if device.isMultiBattery {
+                return [device.batteryLeft, device.batteryRight, device.batteryCase].contains(where: { $0 > 0 })
+            }
+            return device.battery > 0
+        }
+
+        guard !devicesWithBattery.isEmpty else {
             // Show "BT" text so the widget stays visible and clickable
             button.image = nil
             button.attributedTitle = NSAttributedString(
@@ -109,7 +117,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Leading space between bluetooth icon and battery info
         attrStr.append(NSAttributedString(string: " ", attributes: [.font: font]))
 
-        for (index, (_, device)) in connectedDevices.enumerated() {
+        for (index, (_, device)) in devicesWithBattery.enumerated() {
             let battery = device.isMultiBattery
                 ? [device.batteryLeft, device.batteryRight, device.batteryCase].filter { $0 > 0 }.min() ?? 0
                 : device.battery
@@ -141,7 +149,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 attrStr.append(NSAttributedString(string: "\(prefix)\(battery)%", attributes: [.font: font]))
             }
 
-            if index < connectedDevices.count - 1 {
+            if index < devicesWithBattery.count - 1 {
                 attrStr.append(NSAttributedString(string: "  ", attributes: [.font: font]))
             }
         }

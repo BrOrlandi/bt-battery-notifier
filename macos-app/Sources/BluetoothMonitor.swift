@@ -6,11 +6,12 @@ class BluetoothMonitor: ObservableObject {
     private let pollInterval: TimeInterval = 15.0
     private var timer: Timer?
     private var firstPoll = true
+    private let persistenceKey = "cachedDeviceStates"
 
     // address -> cached device state
     @Published private(set) var state: [String: DeviceState] = [:]
 
-    struct DeviceState {
+    struct DeviceState: Codable {
         var name: String
         var connected: Bool
         var battery: Int
@@ -26,7 +27,9 @@ class BluetoothMonitor: ObservableObject {
             .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 
-    private init() {}
+    private init() {
+        loadPersistedState()
+    }
 
     func start() {
         NSLog("[INFO] Monitor started")
@@ -126,6 +129,8 @@ class BluetoothMonitor: ObservableObject {
             state[address] = current
         }
 
+        persistState()
+
         if firstPoll {
             let connected = state.values.filter { $0.connected }
             NSLog("%@", "[INFO] Initial poll: \(state.count) devices found, \(connected.count) connected")
@@ -154,5 +159,25 @@ class BluetoothMonitor: ObservableObject {
             return values.min() ?? 0
         }
         return device.battery
+    }
+
+    private func persistState() {
+        if let data = try? JSONEncoder().encode(state) {
+            UserDefaults.standard.set(data, forKey: persistenceKey)
+        }
+    }
+
+    private func loadPersistedState() {
+        guard let data = UserDefaults.standard.data(forKey: persistenceKey),
+              let saved = try? JSONDecoder().decode([String: DeviceState].self, from: data) else {
+            return
+        }
+        // Restore saved state but mark all devices as disconnected
+        state = saved.mapValues { device in
+            var d = device
+            d.connected = false
+            return d
+        }
+        NSLog("%@", "[INFO] Restored \(state.count) devices from cache")
     }
 }

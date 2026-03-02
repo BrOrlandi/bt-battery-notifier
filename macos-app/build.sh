@@ -8,6 +8,14 @@ BUILD_DIR="$SCRIPT_DIR/build"
 APP_NAME="BT Battery.app"
 APP_DIR="$BUILD_DIR/$APP_NAME"
 BINARY_NAME="bt-battery"
+RELEASE=false
+
+# Parse arguments
+for arg in "$@"; do
+    case $arg in
+        --release) RELEASE=true ;;
+    esac
+done
 
 echo "Building BT Battery..."
 
@@ -37,15 +45,19 @@ swiftc \
     "$SOURCES_DIR/App.swift" \
     -O
 
-# Codesign with developer identity (persists TCC permissions across rebuilds)
-# Falls back to ad-hoc if no developer identity is found
-IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | grep "Apple Development" | head -1 | sed 's/.*"\(.*\)"/\1/')
-if [ -n "$IDENTITY" ]; then
-    codesign --force --sign "$IDENTITY" "$APP_DIR"
-    echo "Signed with: $IDENTITY"
+# Codesign only on release builds (persists TCC permissions like Bluetooth access)
+# Without signing, macOS may re-prompt for permissions on every launch
+if [ "$RELEASE" = true ]; then
+    IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | grep "Apple Development" | head -1 | sed 's/.*"\(.*\)"/\1/')
+    if [ -n "$IDENTITY" ]; then
+        codesign --force --sign "$IDENTITY" "$APP_DIR"
+        echo "Signed with: $IDENTITY"
+    else
+        codesign --force --sign - "$APP_DIR"
+        echo "Signed with ad-hoc (no developer identity found)"
+    fi
 else
-    codesign --force --sign - "$APP_DIR"
-    echo "Signed with ad-hoc (no developer identity found)"
+    echo "Skipping codesign (use --release to sign)"
 fi
 
 echo "Build complete: $APP_DIR"
