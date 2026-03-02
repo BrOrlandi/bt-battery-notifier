@@ -1,4 +1,5 @@
 import Foundation
+import IOBluetooth
 import os.log
 
 private let logger = Logger(subsystem: "com.brunoorlandi.notify-bt-battery", category: "monitor")
@@ -23,6 +24,8 @@ class BluetoothMonitor: ObservableObject {
     private var timer: Timer?
     private var firstPoll = true
     private let persistenceKey = "cachedDeviceStates"
+    private var connectNotification: IOBluetoothUserNotification?
+    private var disconnectNotifications: [IOBluetoothUserNotification] = []
 
     // address -> cached device state
     @Published private(set) var state: [String: DeviceState] = [:]
@@ -53,6 +56,7 @@ class BluetoothMonitor: ObservableObject {
         // (IOBluetoothDevice.pairedDevices() may block if called before runloop starts)
         DispatchQueue.main.async { [weak self] in
             self?.poll()
+            self?.registerBluetoothNotifications()
         }
         timer = Timer.scheduledTimer(withTimeInterval: pollInterval, repeats: true) { [weak self] _ in
             self?.poll()
@@ -62,7 +66,47 @@ class BluetoothMonitor: ObservableObject {
     func stop() {
         timer?.invalidate()
         timer = nil
+        connectNotification?.unregister()
+        connectNotification = nil
+        for n in disconnectNotifications { n.unregister() }
+        disconnectNotifications.removeAll()
         NSLog("[INFO] Monitor stopped")
+    }
+
+    private func registerBluetoothNotifications() {
+        // Register for any device connection events
+        connectNotification = IOBluetoothDevice.register(forConnectNotifications: self, selector: #selector(deviceConnected(_:device:)))
+
+        // Register disconnect notifications for all currently paired devices
+        registerDisconnectForPairedDevices()
+    }
+
+    private func registerDisconnectForPairedDevices() {
+        guard let paired = IOBluetoothDevice.pairedDevices() as? [IOBluetoothDevice] else { return }
+        for device in paired {
+            let notification = device.register(forDisconnectNotification: self, selector: #selector(deviceDisconnected(_:device:)))
+            if let notification = notification {
+                disconnectNotifications.append(notification)
+            }
+        }
+    }
+
+    @objc private func deviceConnected(_ notification: IOBluetoothUserNotification, device: IOBluetoothDevice) {
+        let name = device.name ?? "Unknown"
+        logToFile("[EVENT] Device connected: \(name)")
+        // Register disconnect notification for the newly connected device
+        if let n = device.register(forDisconnectNotification: self, selector: #selector(deviceDisconnected(_:device:))) {
+            disconnectNotifications.append(n)
+        }
+        // Immediate poll to update state and send notifications
+        poll()
+    }
+
+    @objc private func deviceDisconnected(_ notification: IOBluetoothUserNotification, device: IOBluetoothDevice) {
+        let name = device.name ?? "Unknown"
+        logToFile("[EVENT] Device disconnected: \(name)")
+        // Immediate poll to update state and send notifications
+        poll()
     }
 
     private func poll() {
