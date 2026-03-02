@@ -1,4 +1,4 @@
-# BT Battery - Project Guide
+# BT Battery Notifier - Project Guide
 
 ## Overview
 
@@ -12,11 +12,15 @@ macos-app/
     App.swift            # NSApplication entry point, menubar widget, popover
     BluetoothDevice.swift # IOBluetooth device scanning via private APIs
     BluetoothMonitor.swift # Polling loop, state management, notifications
+    Localization.swift   # L() helpers wrapping NSLocalizedString
     NotificationManager.swift # UNUserNotificationCenter wrapper
     Settings.swift       # UserDefaults-backed settings (ObservableObject)
     SettingsView.swift   # SwiftUI settings popover
   Resources/
     Info.plist           # Bundle config (LSUIElement, bundle ID)
+    pt-BR.lproj/         # Portuguese localization
+    en.lproj/            # English localization
+    es.lproj/            # Spanish localization
   build.sh              # Compile + optional codesign
   install.sh            # Build, kill, copy to /Applications, launch
 ```
@@ -47,4 +51,4 @@ Why signing matters for release:
 - **NSLog over print()**: Always use `NSLog` for logging — `print()` output is invisible in macOS GUI apps. Use `NSLog("%@", interpolatedString)` to avoid format string issues with `%` in battery percentages
 - **Deferred first poll**: `IOBluetoothDevice.pairedDevices()` can block if called before the main runloop starts. The first poll is deferred via `DispatchQueue.main.async`
 - **Battery caching**: Battery values are carried over from previous polls when current reading is 0 (device may not report battery every poll). State is persisted to UserDefaults across app restarts
-- **UI language**: All user-facing strings are in Portuguese (pt-BR)
+- **Localization**: User-facing strings are localized via `.lproj/Localizable.strings` (pt-BR, en, es). Use `L("key")` / `L("key", args...)` for all UI strings

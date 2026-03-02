@@ -1,0 +1,26 @@
+/* Settings */
+"settings.title" = "BT Battery Notifier";
+"settings.show_menubar_battery" = "Exibir bateria na barra de menus:";
+"settings.no_devices" = "Nenhum dispositivo encontrado";
+"settings.display_mode" = "Modo de exibição:";
+"settings.icon_and_percentage" = "Ícone e porcentagem";
+"settings.icon_only" = "Apenas ícone";
+"settings.percentage_only" = "Apenas porcentagem";
+"settings.always_notify_disconnect" = "Sempre notificar ao desconectar";
+"settings.notify_low_battery" = "Notificar bateria baixa";
+"settings.notify_below" = "Notificar quando bateria abaixo de:";
+"settings.notify_on_connect" = "Notificar ao conectar";
+"settings.launch_at_login" = "Abrir ao iniciar o Mac";
+"settings.quit" = "Encerrar";
+
+/* Notifications */
+"notification.disconnected" = "%@ desconectado";
+"notification.connected" = "%@ conectado";
+"notification.battery_unknown" = "Bateria: desconhecida";
+"notification.low_battery" = "Bateria baixa - coloque para carregar!";
+
+/* Battery */
+"battery.left" = "E: %d%%";
+"battery.right" = "D: %d%%";
+"battery.case" = "Estojo: %d%%";
+"battery.single" = "Bateria: %d%%";

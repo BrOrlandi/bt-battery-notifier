@@ -22,12 +22,12 @@ struct BluetoothDevice {
     func formatBattery() -> String? {
         if isMultiBatteryDevice {
             var parts: [String] = []
-            if batteryPercentLeft > 0 { parts.append("E: \(batteryPercentLeft)%") }
-            if batteryPercentRight > 0 { parts.append("D: \(batteryPercentRight)%") }
-            if batteryPercentCase > 0 { parts.append("Estojo: \(batteryPercentCase)%") }
+            if batteryPercentLeft > 0 { parts.append(L("battery.left", batteryPercentLeft)) }
+            if batteryPercentRight > 0 { parts.append(L("battery.right", batteryPercentRight)) }
+            if batteryPercentCase > 0 { parts.append(L("battery.case", batteryPercentCase)) }
             if !parts.isEmpty { return parts.joined(separator: " | ") }
         }
-        if batteryPercentSingle > 0 { return "Bateria: \(batteryPercentSingle)%" }
+        if batteryPercentSingle > 0 { return L("battery.single", batteryPercentSingle) }
         return nil
     }
 

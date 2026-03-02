@@ -1,0 +1,26 @@
+/* Settings */
+"settings.title" = "BT Battery Notifier";
+"settings.show_menubar_battery" = "Show battery in menu bar:";
+"settings.no_devices" = "No devices found";
+"settings.display_mode" = "Display mode:";
+"settings.icon_and_percentage" = "Icon and percentage";
+"settings.icon_only" = "Icon only";
+"settings.percentage_only" = "Percentage only";
+"settings.always_notify_disconnect" = "Always notify on disconnect";
+"settings.notify_low_battery" = "Notify low battery";
+"settings.notify_below" = "Notify when battery below:";
+"settings.notify_on_connect" = "Notify on connect";
+"settings.launch_at_login" = "Launch at login";
+"settings.quit" = "Quit";
+
+/* Notifications */
+"notification.disconnected" = "%@ disconnected";
+"notification.connected" = "%@ connected";
+"notification.battery_unknown" = "Battery: unknown";
+"notification.low_battery" = "Low battery - charge it!";
+
+/* Battery */
+"battery.left" = "L: %d%%";
+"battery.right" = "R: %d%%";
+"battery.case" = "Case: %d%%";
+"battery.single" = "Battery: %d%%";

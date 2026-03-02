@@ -6,15 +6,15 @@ struct SettingsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Configurações")
+            Text(L("settings.title"))
                 .font(.headline)
                 .padding(.bottom, 4)
 
-            Text("Exibir bateria na barra de menus:")
+            Text(L("settings.show_menubar_battery"))
                 .font(.subheadline)
 
             if monitor.knownDevices.isEmpty {
-                Text("Nenhum dispositivo encontrado")
+                Text(L("settings.no_devices"))
                     .foregroundColor(.secondary)
                     .font(.caption)
                     .padding(.leading, 20)
@@ -38,43 +38,43 @@ struct SettingsView: View {
             }
 
             HStack {
-                Text("Modo de exibição:")
+                Text(L("settings.display_mode"))
                 Picker("", selection: $settings.menubarDisplayMode) {
-                    Text("Ícone e porcentagem").tag("iconAndPercentage")
-                    Text("Apenas ícone").tag("iconOnly")
-                    Text("Apenas porcentagem").tag("percentageOnly")
+                    Text(L("settings.icon_and_percentage")).tag("iconAndPercentage")
+                    Text(L("settings.icon_only")).tag("iconOnly")
+                    Text(L("settings.percentage_only")).tag("percentageOnly")
                 }
                 .labelsHidden()
             }
 
             Divider()
 
-            Toggle("Sempre notificar ao desconectar", isOn: $settings.alwaysNotifyOnDisconnect)
+            Toggle(L("settings.always_notify_disconnect"), isOn: $settings.alwaysNotifyOnDisconnect)
 
             if !settings.alwaysNotifyOnDisconnect {
-                Toggle("Notificar bateria baixa", isOn: $settings.notifyLowBattery)
+                Toggle(L("settings.notify_low_battery"), isOn: $settings.notifyLowBattery)
                     .padding(.leading, 20)
 
                 if settings.notifyLowBattery {
                     HStack {
-                        Text("Notificar quando bateria abaixo de:")
+                        Text(L("settings.notify_below"))
                         Stepper("\(settings.batteryThreshold)%", value: $settings.batteryThreshold, in: 5...100, step: 5)
                     }
                     .padding(.leading, 20)
                 }
             }
 
-            Toggle("Notificar ao conectar", isOn: $settings.notifyOnConnect)
+            Toggle(L("settings.notify_on_connect"), isOn: $settings.notifyOnConnect)
 
             Divider()
 
-            Toggle("Abrir ao iniciar o Mac", isOn: $settings.launchAtLogin)
+            Toggle(L("settings.launch_at_login"), isOn: $settings.launchAtLogin)
 
             Divider()
 
             HStack {
                 Spacer()
-                Button("Encerrar") {
+                Button(L("settings.quit")) {
                     NSApplication.shared.terminate(nil)
                 }
                 .foregroundColor(.red)
