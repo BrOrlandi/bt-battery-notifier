@@ -1,4 +1,20 @@
 import Foundation
+import os.log
+
+private let logger = Logger(subsystem: "com.brunoorlandi.notify-bt-battery", category: "monitor")
+
+func logToFile(_ message: String) {
+    let path = NSHomeDirectory() + "/Library/Logs/bt-battery.log"
+    let timestamp = ISO8601DateFormatter().string(from: Date())
+    let line = "[\(timestamp)] \(message)\n"
+    if let handle = FileHandle(forWritingAtPath: path) {
+        handle.seekToEndOfFile()
+        handle.write(line.data(using: .utf8)!)
+        handle.closeFile()
+    } else {
+        FileManager.default.createFile(atPath: path, contents: line.data(using: .utf8))
+    }
+}
 
 class BluetoothMonitor: ObservableObject {
     static let shared = BluetoothMonitor()
@@ -58,14 +74,25 @@ class BluetoothMonitor: ObservableObject {
             byAddress[device.address] = device
         }
 
+        let devSummary = byAddress.values.map { "\($0.name)(\($0.connected ? "ON" : "OFF") bat=\($0.batteryPercentSingle)/L\($0.batteryPercentLeft)/R\($0.batteryPercentRight)/C\($0.batteryPercentCase) multi=\($0.isMultiBatteryDevice))" }.joined(separator: ", ")
+        logToFile("[POLL] \(byAddress.count) devices: \(devSummary)")
+
         let settings = Settings.shared
 
         for (address, raw) in byAddress {
             let prev = state[address]
 
+            // Consider device connected if isConnected() OR has fresh battery reading
+            // (some devices like Galaxy Buds report battery but isConnected() returns false)
+            let hasFreshReading = raw.batteryPercentSingle > 0
+                || raw.batteryPercentLeft > 0
+                || raw.batteryPercentRight > 0
+                || raw.batteryPercentCase > 0
+            let isConnected = raw.connected || hasFreshReading
+
             var current = DeviceState(
                 name: raw.name,
-                connected: raw.connected,
+                connected: isConnected,
                 battery: raw.batteryPercentSingle,
                 batteryLeft: raw.batteryPercentLeft,
                 batteryRight: raw.batteryPercentRight,
@@ -81,8 +108,8 @@ class BluetoothMonitor: ObservableObject {
                 if current.batteryCase == 0 { current.batteryCase = prev.batteryCase }
             }
 
-            // Track when battery was last read from a connected device
-            if current.connected {
+            // Track when battery was last read (fresh non-zero reading from device)
+            if hasFreshReading || current.connected {
                 current.lastBatteryUpdate = Date()
             } else if let prev = prev {
                 current.lastBatteryUpdate = prev.lastBatteryUpdate
@@ -126,6 +153,11 @@ class BluetoothMonitor: ObservableObject {
                 }
             }
 
+            // Log state changes for debugging
+            if prev == nil || prev!.battery != current.battery || prev!.connected != current.connected {
+                logToFile("[STATE] \(current.name) (\(address)): connected=\(current.connected) bat=\(current.battery) L=\(current.batteryLeft) R=\(current.batteryRight) C=\(current.batteryCase) lastUpdate=\(current.lastBatteryUpdate.map { formatDate($0) } ?? "nil")")
+            }
+
             state[address] = current
         }
 
@@ -133,9 +165,9 @@ class BluetoothMonitor: ObservableObject {
 
         if firstPoll {
             let connected = state.values.filter { $0.connected }
-            NSLog("%@", "[INFO] Initial poll: \(state.count) devices found, \(connected.count) connected")
-            for d in connected {
-                NSLog("%@", "[INFO]   - \(d.name): \(d.battery)%%")
+            logToFile("[INIT] \(state.count) devices in state, \(connected.count) connected")
+            for (addr, d) in state {
+                logToFile("[INIT]   \(d.name) (\(addr)): connected=\(d.connected) bat=\(d.battery) L=\(d.batteryLeft) R=\(d.batteryRight) C=\(d.batteryCase) multi=\(d.isMultiBattery) lastUpdate=\(d.lastBatteryUpdate.map { formatDate($0) } ?? "nil")")
             }
             firstPoll = false
         }
@@ -162,22 +194,42 @@ class BluetoothMonitor: ObservableObject {
     }
 
     private func persistState() {
-        if let data = try? JSONEncoder().encode(state) {
+        do {
+            let data = try JSONEncoder().encode(state)
             UserDefaults.standard.set(data, forKey: persistenceKey)
+            UserDefaults.standard.synchronize()
+        } catch {
+            NSLog("%@", "[ERROR] Failed to persist state: \(error)")
         }
     }
 
     private func loadPersistedState() {
-        guard let data = UserDefaults.standard.data(forKey: persistenceKey),
-              let saved = try? JSONDecoder().decode([String: DeviceState].self, from: data) else {
+        guard let data = UserDefaults.standard.data(forKey: persistenceKey) else {
+            logToFile("[LOAD] No persisted device state found")
             return
         }
-        // Restore saved state but mark all devices as disconnected
-        state = saved.mapValues { device in
-            var d = device
-            d.connected = false
-            return d
+        logToFile("[LOAD] Found \(data.count) bytes of persisted data")
+        do {
+            let saved = try JSONDecoder().decode([String: DeviceState].self, from: data)
+            // Restore saved state but mark all devices as disconnected
+            state = saved.mapValues { device in
+                var d = device
+                d.connected = false
+                return d
+            }
+            for (address, device) in state {
+                let battery = getMainBattery(device)
+                let dateStr = device.lastBatteryUpdate.map { formatDate($0) } ?? "unknown"
+                logToFile("[LOAD] Restored: \(device.name) (\(address)) battery=\(battery) lastUpdate=\(dateStr)")
+            }
+        } catch {
+            logToFile("[LOAD] ERROR decoding: \(error)")
         }
-        NSLog("%@", "[INFO] Restored \(state.count) devices from cache")
+    }
+
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd/MM HH:mm"
+        return formatter.string(from: date)
     }
 }

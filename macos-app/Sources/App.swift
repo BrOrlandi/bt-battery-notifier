@@ -1,6 +1,7 @@
 import Cocoa
 import SwiftUI
 import Combine
+import CoreBluetooth
 
 @main
 struct BTBatteryApp {
@@ -12,13 +13,18 @@ struct BTBatteryApp {
     }
 }
 
-class AppDelegate: NSObject, NSApplicationDelegate {
+class AppDelegate: NSObject, NSApplicationDelegate, CBCentralManagerDelegate {
     private var statusItem: NSStatusItem!
     private var popover: NSPopover!
     private var monitorCancellable: AnyCancellable?
     private var settingsCancellable: AnyCancellable?
+    private var centralManager: CBCentralManager!
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Initialize CoreBluetooth to ensure Bluetooth authorization is active
+        // This triggers the permission dialog if needed and activates the BT stack
+        centralManager = CBCentralManager(delegate: self, queue: nil)
+
         // Request notification permission
         NotificationManager.shared.requestPermission()
 
@@ -62,6 +68,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
     }
 
+    func centralManagerDidUpdateState(_ central: CBCentralManager) {
+        logToFile("[BT] CBCentralManager state: \(central.state.rawValue) (4=poweredOn, 5=poweredOff)")
+        if central.state == .poweredOn {
+            logToFile("[BT] Bluetooth authorized and powered on")
+        }
+    }
+
     func applicationWillTerminate(_ notification: Notification) {
         BluetoothMonitor.shared.stop()
         monitorCancellable?.cancel()
@@ -81,22 +94,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         btImage?.isTemplate = true
         button.image = btImage
 
-        // Collect selected devices for menubar display (connected or with cached battery)
-        let selectedDevices: [(String, BluetoothMonitor.DeviceState)] = settings.menubarDeviceAddresses
+        // Collect selected devices that are connected and have battery data
+        let connectedDevices: [(String, BluetoothMonitor.DeviceState)] = settings.menubarDeviceAddresses
             .compactMap { address in
-                guard let device = monitor.state[address] else { return nil }
+                guard let device = monitor.state[address], device.connected else { return nil }
                 return (address, device)
             }
 
-        // Filter to devices that have battery data to show
-        let devicesWithBattery = selectedDevices.filter { (_, device) in
-            if device.isMultiBattery {
-                return [device.batteryLeft, device.batteryRight, device.batteryCase].contains(where: { $0 > 0 })
-            }
-            return device.battery > 0
-        }
-
-        guard !devicesWithBattery.isEmpty else {
+        guard !connectedDevices.isEmpty else {
             // Show "BT" text so the widget stays visible and clickable
             button.image = nil
             button.attributedTitle = NSAttributedString(
@@ -117,7 +122,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Leading space between bluetooth icon and battery info
         attrStr.append(NSAttributedString(string: " ", attributes: [.font: font]))
 
-        for (index, (_, device)) in devicesWithBattery.enumerated() {
+        for (index, (_, device)) in connectedDevices.enumerated() {
             let battery = device.isMultiBattery
                 ? [device.batteryLeft, device.batteryRight, device.batteryCase].filter { $0 > 0 }.min() ?? 0
                 : device.battery
@@ -149,7 +154,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 attrStr.append(NSAttributedString(string: "\(prefix)\(battery)%", attributes: [.font: font]))
             }
 
-            if index < devicesWithBattery.count - 1 {
+            if index < connectedDevices.count - 1 {
                 attrStr.append(NSAttributedString(string: "  ", attributes: [.font: font]))
             }
         }

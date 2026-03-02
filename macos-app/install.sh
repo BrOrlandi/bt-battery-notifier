@@ -6,8 +6,8 @@ APP_NAME="BT Battery.app"
 BUILD_DIR="$SCRIPT_DIR/build"
 INSTALL_DIR="/Applications"
 
-# Build first
-bash "$SCRIPT_DIR/build.sh"
+# Build with release signing (required for TCC permissions like Bluetooth)
+bash "$SCRIPT_DIR/build.sh" --release
 
 # Kill existing instance if running
 pkill -f "BT Battery" 2>/dev/null || true
