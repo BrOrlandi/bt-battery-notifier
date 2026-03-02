@@ -5,9 +5,9 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SOURCES_DIR="$SCRIPT_DIR/Sources"
 RESOURCES_DIR="$SCRIPT_DIR/Resources"
 BUILD_DIR="$SCRIPT_DIR/build"
-APP_NAME="BT Battery.app"
+APP_NAME="BT Battery Notifier.app"
 APP_DIR="$BUILD_DIR/$APP_NAME"
-BINARY_NAME="bt-battery"
+BINARY_NAME="bt-battery-notifier"
 RELEASE=false
 
 # Parse arguments
@@ -17,7 +17,7 @@ for arg in "$@"; do
     esac
 done
 
-echo "Building BT Battery..."
+echo "Building BT Battery Notifier..."
 
 # Clean previous build
 rm -rf "$APP_DIR"
@@ -29,6 +29,13 @@ mkdir -p "$APP_DIR/Contents/Resources"
 # Copy Info.plist
 cp "$RESOURCES_DIR/Info.plist" "$APP_DIR/Contents/Info.plist"
 
+# Copy localization resources
+for lproj in "$RESOURCES_DIR"/*.lproj; do
+    if [ -d "$lproj" ]; then
+        cp -R "$lproj" "$APP_DIR/Contents/Resources/"
+    fi
+done
+
 # Compile Swift sources
 swiftc \
     -o "$APP_DIR/Contents/MacOS/$BINARY_NAME" \
@@ -37,6 +44,7 @@ swiftc \
     -framework Cocoa \
     -framework UserNotifications \
     -framework SwiftUI \
+    "$SOURCES_DIR/Localization.swift" \
     "$SOURCES_DIR/BluetoothDevice.swift" \
     "$SOURCES_DIR/Settings.swift" \
     "$SOURCES_DIR/NotificationManager.swift" \

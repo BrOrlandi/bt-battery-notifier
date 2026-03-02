@@ -3,13 +3,13 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleIdentifier</key>
-    <string>com.brunoorlandi.notify-bt-battery</string>
+    <string>com.brunoorlandi.bt-battery-notifier</string>
     <key>CFBundleName</key>
-    <string>BT Battery</string>
+    <string>BT Battery Notifier</string>
     <key>CFBundleDisplayName</key>
-    <string>BT Battery</string>
+    <string>BT Battery Notifier</string>
     <key>CFBundleExecutable</key>
-    <string>bt-battery</string>
+    <string>bt-battery-notifier</string>
     <key>CFBundleVersion</key>
     <string>0.1.0</string>
     <key>CFBundleShortVersionString</key>
@@ -22,5 +22,13 @@
     <true/>
     <key>NSBluetoothAlwaysUsageDescription</key>
     <string>BT Battery needs Bluetooth access to monitor device battery levels.</string>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>pt-BR</string>
+    <key>CFBundleLocalizations</key>
+    <array>
+        <string>pt-BR</string>
+        <string>en</string>
+        <string>es</string>
+    </array>
 </dict>
 </plist>

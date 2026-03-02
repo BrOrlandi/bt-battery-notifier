@@ -2,7 +2,7 @@ import Foundation
 import IOBluetooth
 import os.log
 
-private let logger = Logger(subsystem: "com.brunoorlandi.notify-bt-battery", category: "monitor")
+private let logger = Logger(subsystem: "com.brunoorlandi.bt-battery-notifier", category: "monitor")
 
 func logToFile(_ message: String) {
     let path = NSHomeDirectory() + "/Library/Logs/bt-battery.log"
@@ -175,10 +175,10 @@ class BluetoothMonitor: ObservableObject {
                     }
 
                     if shouldNotify {
-                        let title = "\(prev.name) desconectado"
-                        let body = batteryText ?? "Bateria: desconhecida"
+                        let title = L("notification.disconnected", prev.name)
+                        let body = batteryText ?? L("notification.battery_unknown")
                         let subtitle: String? = (mainBattery > 0 && mainBattery < settings.batteryThreshold)
-                            ? "Bateria baixa - coloque para carregar!"
+                            ? L("notification.low_battery")
                             : nil
 
                         NSLog("%@", "[INFO] Disconnected: \(prev.name) (\(address)) - \(body)")
@@ -190,8 +190,8 @@ class BluetoothMonitor: ObservableObject {
                 if settings.notifyOnConnect,
                    (prev == nil || !prev!.connected),
                    current.connected {
-                    let batteryText = formatBattery(current) ?? "Bateria: desconhecida"
-                    let title = "\(current.name) conectado"
+                    let batteryText = formatBattery(current) ?? L("notification.battery_unknown")
+                    let title = L("notification.connected", current.name)
                     NSLog("%@", "[INFO] Connected: \(current.name) (\(address)) - \(batteryText)")
                     NotificationManager.shared.send(title: title, body: batteryText)
                 }
@@ -220,12 +220,12 @@ class BluetoothMonitor: ObservableObject {
     private func formatBattery(_ device: DeviceState) -> String? {
         if device.isMultiBattery {
             var parts: [String] = []
-            if device.batteryLeft > 0 { parts.append("E: \(device.batteryLeft)%") }
-            if device.batteryRight > 0 { parts.append("D: \(device.batteryRight)%") }
-            if device.batteryCase > 0 { parts.append("Estojo: \(device.batteryCase)%") }
+            if device.batteryLeft > 0 { parts.append(L("battery.left", device.batteryLeft)) }
+            if device.batteryRight > 0 { parts.append(L("battery.right", device.batteryRight)) }
+            if device.batteryCase > 0 { parts.append(L("battery.case", device.batteryCase)) }
             if !parts.isEmpty { return parts.joined(separator: " | ") }
         }
-        if device.battery > 0 { return "Bateria: \(device.battery)%" }
+        if device.battery > 0 { return L("battery.single", device.battery) }
         return nil
     }
 

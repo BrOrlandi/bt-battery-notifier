@@ -3,14 +3,14 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BUILD_DIR="$SCRIPT_DIR/build"
-APP_NAME="BT Battery.app"
+APP_NAME="BT Battery Notifier.app"
 APP_DIR="$BUILD_DIR/$APP_NAME"
 VERSION="0.1.0"
-DMG_NAME="BT-Battery-${VERSION}.dmg"
+DMG_NAME="BT-Battery-Notifier-${VERSION}.dmg"
 DMG_PATH="$BUILD_DIR/$DMG_NAME"
 TEMP_DIR="$BUILD_DIR/dmg-staging"
 
-echo "=== Packaging BT Battery $VERSION ==="
+echo "=== Packaging BT Battery Notifier $VERSION ==="
 
 # Step 1: Build the release .app
 echo "Building release..."
@@ -32,7 +32,7 @@ ln -s /Applications "$TEMP_DIR/Applications"
 echo "Creating DMG..."
 rm -f "$DMG_PATH"
 hdiutil create \
-    -volname "BT Battery" \
+    -volname "BT Battery Notifier" \
     -srcfolder "$TEMP_DIR" \
     -ov \
     -format UDZO \

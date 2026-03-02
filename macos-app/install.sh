@@ -2,7 +2,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-APP_NAME="BT Battery.app"
+APP_NAME="BT Battery Notifier.app"
 BUILD_DIR="$SCRIPT_DIR/build"
 INSTALL_DIR="/Applications"
 
@@ -10,7 +10,7 @@ INSTALL_DIR="/Applications"
 bash "$SCRIPT_DIR/build.sh" --release
 
 # Kill existing instance if running
-pkill -f "BT Battery" 2>/dev/null || true
+pkill -f "BT Battery Notifier" 2>/dev/null || true
 
 # Copy to /Applications
 echo "Installing to $INSTALL_DIR..."
@@ -18,8 +18,8 @@ rm -rf "$INSTALL_DIR/$APP_NAME"
 cp -R "$BUILD_DIR/$APP_NAME" "$INSTALL_DIR/$APP_NAME"
 
 # Launch the app
-echo "Launching BT Battery..."
+echo "Launching BT Battery Notifier..."
 open "$INSTALL_DIR/$APP_NAME"
 
-echo "Done! BT Battery is running in the menubar."
+echo "Done! BT Battery Notifier is running in the menubar."
 echo "To launch at login, enable it in the app settings."
