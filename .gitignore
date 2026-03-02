@@ -3,3 +3,4 @@ swift/bt_battery
 logs/
 *.log
 .DS_Store
+macos-app/build/
