@@ -46,7 +46,3 @@ Click the battery icon in the menubar to configure:
 ## How it works
 
 The app polls paired Bluetooth devices every 15 seconds using the IOBluetooth framework. It tracks connection state changes and caches battery values so the last known level is available even after a device disconnects.
-
-## License
-
-MIT

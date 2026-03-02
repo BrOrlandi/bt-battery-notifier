@@ -37,4 +37,15 @@ swiftc \
     "$SOURCES_DIR/App.swift" \
     -O
 
+# Codesign with developer identity (persists TCC permissions across rebuilds)
+# Falls back to ad-hoc if no developer identity is found
+IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | grep "Apple Development" | head -1 | sed 's/.*"\(.*\)"/\1/')
+if [ -n "$IDENTITY" ]; then
+    codesign --force --sign "$IDENTITY" "$APP_DIR"
+    echo "Signed with: $IDENTITY"
+else
+    codesign --force --sign - "$APP_DIR"
+    echo "Signed with ad-hoc (no developer identity found)"
+fi
+
 echo "Build complete: $APP_DIR"

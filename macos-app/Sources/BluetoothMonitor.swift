@@ -8,7 +8,7 @@ class BluetoothMonitor: ObservableObject {
     private var firstPoll = true
 
     // address -> cached device state
-    private var state: [String: DeviceState] = [:]
+    @Published private(set) var state: [String: DeviceState] = [:]
 
     struct DeviceState {
         var name: String
@@ -18,13 +18,23 @@ class BluetoothMonitor: ObservableObject {
         var batteryRight: Int
         var batteryCase: Int
         var isMultiBattery: Bool
+        var lastBatteryUpdate: Date?
+    }
+
+    var knownDevices: [(address: String, name: String)] {
+        state.map { (address: $0.key, name: $0.value.name) }
+            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 
     private init() {}
 
     func start() {
-        print("[INFO] Monitor started")
-        poll()
+        NSLog("[INFO] Monitor started")
+        // Defer first poll to next runloop iteration so the main runloop is running
+        // (IOBluetoothDevice.pairedDevices() may block if called before runloop starts)
+        DispatchQueue.main.async { [weak self] in
+            self?.poll()
+        }
         timer = Timer.scheduledTimer(withTimeInterval: pollInterval, repeats: true) { [weak self] _ in
             self?.poll()
         }
@@ -33,7 +43,7 @@ class BluetoothMonitor: ObservableObject {
     func stop() {
         timer?.invalidate()
         timer = nil
-        print("[INFO] Monitor stopped")
+        NSLog("[INFO] Monitor stopped")
     }
 
     private func poll() {
@@ -60,12 +70,19 @@ class BluetoothMonitor: ObservableObject {
                 isMultiBattery: raw.isMultiBatteryDevice
             )
 
-            // Cache battery: only update if new value > 0
-            if let prev = prev, current.connected {
+            // Cache battery: carry over previous values when current reports 0
+            if let prev = prev {
                 if current.battery == 0 { current.battery = prev.battery }
                 if current.batteryLeft == 0 { current.batteryLeft = prev.batteryLeft }
                 if current.batteryRight == 0 { current.batteryRight = prev.batteryRight }
                 if current.batteryCase == 0 { current.batteryCase = prev.batteryCase }
+            }
+
+            // Track when battery was last read from a connected device
+            if current.connected {
+                current.lastBatteryUpdate = Date()
+            } else if let prev = prev {
+                current.lastBatteryUpdate = prev.lastBatteryUpdate
             }
 
             if !firstPoll {
@@ -77,8 +94,10 @@ class BluetoothMonitor: ObservableObject {
                     let shouldNotify: Bool
                     if settings.alwaysNotifyOnDisconnect {
                         shouldNotify = true
-                    } else {
+                    } else if settings.notifyLowBattery {
                         shouldNotify = mainBattery > 0 && mainBattery < settings.batteryThreshold
+                    } else {
+                        shouldNotify = false
                     }
 
                     if shouldNotify {
@@ -88,7 +107,7 @@ class BluetoothMonitor: ObservableObject {
                             ? "Bateria baixa - coloque para carregar!"
                             : nil
 
-                        print("[INFO] Disconnected: \(prev.name) (\(address)) - \(body)")
+                        NSLog("%@", "[INFO] Disconnected: \(prev.name) (\(address)) - \(body)")
                         NotificationManager.shared.send(title: title, body: body, subtitle: subtitle)
                     }
                 }
@@ -99,7 +118,7 @@ class BluetoothMonitor: ObservableObject {
                    current.connected {
                     let batteryText = formatBattery(current) ?? "Bateria: desconhecida"
                     let title = "\(current.name) conectado"
-                    print("[INFO] Connected: \(current.name) (\(address)) - \(batteryText)")
+                    NSLog("%@", "[INFO] Connected: \(current.name) (\(address)) - \(batteryText)")
                     NotificationManager.shared.send(title: title, body: batteryText)
                 }
             }
@@ -109,9 +128,9 @@ class BluetoothMonitor: ObservableObject {
 
         if firstPoll {
             let connected = state.values.filter { $0.connected }
-            print("[INFO] Initial poll: \(state.count) devices found, \(connected.count) connected")
+            NSLog("%@", "[INFO] Initial poll: \(state.count) devices found, \(connected.count) connected")
             for d in connected {
-                print("[INFO]   - \(d.name): \(d.battery)%")
+                NSLog("%@", "[INFO]   - \(d.name): \(d.battery)%%")
             }
             firstPoll = false
         }

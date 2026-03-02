@@ -9,24 +9,40 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
     }
 
     func requestPermission() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { granted, error in
-            if let error = error {
-                print("[ERROR] Notification permission error: \(error)")
-            }
-            if granted {
-                print("[INFO] Notification permission granted")
+        let center = UNUserNotificationCenter.current()
+
+        // Check current authorization status
+        center.getNotificationSettings { settings in
+            NSLog("[INFO] Notification auth status: %d (0=notDetermined, 1=denied, 2=authorized)", settings.authorizationStatus.rawValue)
+
+            switch settings.authorizationStatus {
+            case .notDetermined:
+                center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+                    if let error = error {
+                        NSLog("[ERROR] Notification permission error: %@", "\(error)")
+                    }
+                    NSLog("[INFO] Notification permission result: %@", granted ? "granted" : "denied")
+                }
+            case .authorized, .provisional:
+                NSLog("[INFO] Notifications already authorized")
+            case .denied:
+                NSLog("[WARN] Notifications denied - user must enable in System Settings")
+            @unknown default:
+                NSLog("[WARN] Notification status unknown: %d", settings.authorizationStatus.rawValue)
             }
         }
     }
 
     func send(title: String, body: String, subtitle: String? = nil) {
+        NSLog("[INFO] Sending notification: %@ - %@", title, body)
+
         let content = UNMutableNotificationContent()
         content.title = title
         content.body = body
         if let subtitle = subtitle {
             content.subtitle = subtitle
         }
-        content.sound = .default
+        content.sound = nil
 
         let request = UNNotificationRequest(
             identifier: UUID().uuidString,
@@ -36,7 +52,9 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
 
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
-                print("[ERROR] Failed to send notification: \(error)")
+                NSLog("[ERROR] Failed to send notification: %@", "\(error)")
+            } else {
+                NSLog("[INFO] Notification delivered: %@", title)
             }
         }
     }
