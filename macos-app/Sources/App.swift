@@ -30,6 +30,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, CBCentralManagerDelegate {
 
         // Setup menubar icon with variable length for text
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        statusItem.autosaveName = "BTBatteryNotifier"
         if let button = statusItem.button {
             let config = NSImage.SymbolConfiguration(pointSize: 13, weight: .regular)
             let btImage = NSImage(systemSymbolName: "bluetooth", accessibilityDescription: nil)?
