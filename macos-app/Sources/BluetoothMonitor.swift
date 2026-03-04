@@ -144,11 +144,16 @@ class BluetoothMonitor: ObservableObject {
                 isMultiBattery: raw.isMultiBatteryDevice
             )
 
-            // Cache battery: carry over previous values when current reports 0,
-            // but only if the device was already connected (not a fresh reconnection).
-            // On reconnection, start fresh so we don't show stale battery from before charging.
-            let wasConnected = prev?.connected == true
-            if let prev = prev, wasConnected {
+            // Cache battery: carry over previous values when current reports 0.
+            // On reconnection, only discard cache if it's stale (>6h) — likely
+            // charged since last seen. For quick disconnect/reconnect, keep the cache
+            // since the API may take a while to report battery after reconnection.
+            let justReconnected = current.connected && (prev == nil || !prev!.connected)
+            let cacheIsStale = prev?.lastBatteryUpdate
+                .map { Date().timeIntervalSince($0) > 6 * 3600 } ?? true
+            let shouldDiscardCache = justReconnected && cacheIsStale
+
+            if let prev = prev, !shouldDiscardCache {
                 if current.battery == 0 { current.battery = prev.battery }
                 if current.batteryLeft == 0 { current.batteryLeft = prev.batteryLeft }
                 if current.batteryRight == 0 { current.batteryRight = prev.batteryRight }
@@ -158,7 +163,7 @@ class BluetoothMonitor: ObservableObject {
             // Track when battery was last read (fresh non-zero reading from device)
             if hasFreshReading {
                 current.lastBatteryUpdate = Date()
-            } else if let prev = prev, wasConnected {
+            } else if let prev = prev, !shouldDiscardCache {
                 current.lastBatteryUpdate = prev.lastBatteryUpdate
             }
 
