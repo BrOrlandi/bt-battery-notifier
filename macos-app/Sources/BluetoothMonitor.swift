@@ -1,5 +1,6 @@
 import Foundation
 import IOBluetooth
+import AppKit
 import os.log
 
 private let logger = Logger(subsystem: "com.brunoorlandi.bt-battery-notifier", category: "monitor")
@@ -59,6 +60,24 @@ class BluetoothMonitor: ObservableObject {
             self?.registerBluetoothNotifications()
         }
         timer = Timer.scheduledTimer(withTimeInterval: pollInterval, repeats: true) { [weak self] _ in
+            self?.poll()
+        }
+
+        // After macOS wakes from sleep, IOBluetooth framework often becomes stale
+        // and stops returning battery data. Force subprocess fallback on wake.
+        NSWorkspace.shared.notificationCenter.addObserver(
+            self,
+            selector: #selector(handleWake),
+            name: NSWorkspace.didWakeNotification,
+            object: nil
+        )
+    }
+
+    @objc private func handleWake() {
+        logToFile("[WAKE] System woke from sleep, forcing subprocess battery reads")
+        BluetoothDevice.forceSubprocessReads()
+        // Poll immediately after wake to get fresh battery data
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
             self?.poll()
         }
     }

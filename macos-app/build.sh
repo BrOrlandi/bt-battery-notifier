@@ -53,6 +53,15 @@ swiftc \
     "$SOURCES_DIR/App.swift" \
     -O
 
+# Compile battery reader helper (subprocess fallback for stale IOBluetooth)
+HELPER_NAME="bt-battery-reader"
+swiftc \
+    -o "$APP_DIR/Contents/MacOS/$HELPER_NAME" \
+    -framework IOBluetooth \
+    -framework Foundation \
+    "$SOURCES_DIR/BatteryReaderHelper.swift" \
+    -O
+
 # Codesign only on release builds (persists TCC permissions like Bluetooth access)
 # Without signing, macOS may re-prompt for permissions on every launch
 if [ "$RELEASE" = true ]; then

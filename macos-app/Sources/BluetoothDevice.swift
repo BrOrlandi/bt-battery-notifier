@@ -145,6 +145,52 @@ struct BluetoothDevice {
         return result
     }
 
+    // MARK: - Subprocess fallback for stale IOBluetooth
+
+    // Track consecutive zero-battery readings per address for connected devices
+    private static var zeroReadingCounts: [String: Int] = [:]
+    private static let subprocessThreshold = 3 // After 3 consecutive zero readings (~45s), use subprocess
+    private static var forceSubprocess = false
+
+    /// Force all subsequent reads to use subprocess (called after system wake)
+    static func forceSubprocessReads() {
+        forceSubprocess = true
+    }
+
+    private static func readBatteryViaSubprocess(address: String) -> (single: Int, left: Int, right: Int, casePct: Int, isMulti: Bool)? {
+        guard let helperPath = Bundle.main.executableURL?.deletingLastPathComponent().appendingPathComponent("bt-battery-reader").path else {
+            return nil
+        }
+
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: helperPath)
+        process.arguments = [address]
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = FileHandle.nullDevice
+
+        do {
+            try process.run()
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            process.waitUntilExit()
+
+            guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                return nil
+            }
+
+            let single = json["single"] as? Int ?? 0
+            let left = json["left"] as? Int ?? 0
+            let right = json["right"] as? Int ?? 0
+            let casePct = json["case"] as? Int ?? 0
+            let multi = json["multi"] as? Bool ?? false
+
+            return (single, left, right, casePct, multi)
+        } catch {
+            NSLog("%@", "[ERROR] Battery reader subprocess failed: \(error)")
+            return nil
+        }
+    }
+
     // MARK: - Public scan
 
     static func scanPairedDevices() -> [BluetoothDevice] {
@@ -176,6 +222,25 @@ struct BluetoothDevice {
                 if bat.left == 0 { bat.left = profiler.left }
                 if bat.right == 0 { bat.right = profiler.right }
                 if bat.casePct == 0 { bat.casePct = profiler.casePct }
+            }
+
+            // Subprocess fallback: when IOBluetooth framework becomes stale in long-running
+            // processes, value(forKey:) stops returning battery data. A fresh subprocess
+            // always works. Only trigger after consecutive zero readings for connected devices.
+            let allZero = bat.single == 0 && bat.left == 0 && bat.right == 0 && bat.casePct == 0
+            if connected && allZero {
+                zeroReadingCounts[address, default: 0] += 1
+                if forceSubprocess || zeroReadingCounts[address]! >= subprocessThreshold {
+                    if let sub = readBatteryViaSubprocess(address: address) {
+                        bat.single = sub.single
+                        bat.left = sub.left
+                        bat.right = sub.right
+                        bat.casePct = sub.casePct
+                        bat.isMulti = sub.isMulti
+                    }
+                }
+            } else {
+                zeroReadingCounts[address] = 0
             }
 
             return BluetoothDevice(
