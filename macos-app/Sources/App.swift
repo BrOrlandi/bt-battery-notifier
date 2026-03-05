@@ -168,6 +168,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, CBCentralManagerDelegate {
         if popover.isShown {
             popover.performClose(nil)
         } else {
+            // Check notification authorization when opening settings
+            NotificationManager.shared.checkAuthorizationStatus()
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
             // Bring popover to front
             NSApp.activate(ignoringOtherApps: true)

@@ -214,13 +214,14 @@ class BluetoothMonitor: ObservableObject {
                 }
 
                 // Detect connection
-                if settings.notifyOnConnect,
-                   (prev == nil || !prev!.connected),
-                   current.connected {
-                    let batteryText = formatBattery(current) ?? L("notification.battery_unknown")
-                    let title = L("notification.connected", current.name)
-                    NSLog("%@", "[INFO] Connected: \(current.name) (\(address)) - \(batteryText)")
-                    NotificationManager.shared.send(title: title, body: batteryText)
+                if current.connected && (prev == nil || !prev!.connected) {
+                    logToFile("[CONNECT] \(current.name) (\(address)): notifyOnConnect=\(settings.notifyOnConnect) prevConnected=\(prev?.connected.description ?? "nil")")
+                    if settings.notifyOnConnect {
+                        let batteryText = formatBattery(current) ?? L("notification.battery_unknown")
+                        let title = L("notification.connected", current.name)
+                        NSLog("%@", "[INFO] Connected: \(current.name) (\(address)) - \(batteryText)")
+                        NotificationManager.shared.send(title: title, body: batteryText)
+                    }
                 }
             }
 

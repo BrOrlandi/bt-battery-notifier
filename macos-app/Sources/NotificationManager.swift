@@ -1,11 +1,21 @@
 import UserNotifications
 
-class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
+class NotificationManager: NSObject, ObservableObject, UNUserNotificationCenterDelegate {
     static let shared = NotificationManager()
+
+    @Published var authorizationDenied = false
 
     private override init() {
         super.init()
         UNUserNotificationCenter.current().delegate = self
+    }
+
+    func checkAuthorizationStatus() {
+        UNUserNotificationCenter.current().getNotificationSettings { [weak self] settings in
+            DispatchQueue.main.async {
+                self?.authorizationDenied = settings.authorizationStatus == .denied
+            }
+        }
     }
 
     func requestPermission() {
@@ -25,8 +35,10 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
                 }
             case .authorized, .provisional:
                 NSLog("[INFO] Notifications already authorized")
+                DispatchQueue.main.async { self.authorizationDenied = false }
             case .denied:
                 NSLog("[WARN] Notifications denied - user must enable in System Settings")
+                DispatchQueue.main.async { self.authorizationDenied = true }
             @unknown default:
                 NSLog("[WARN] Notification status unknown: %d", settings.authorizationStatus.rawValue)
             }

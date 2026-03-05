@@ -3,12 +3,35 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject var settings = Settings.shared
     @ObservedObject var monitor = BluetoothMonitor.shared
+    @ObservedObject var notificationManager = NotificationManager.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(L("settings.title"))
                 .font(.headline)
                 .padding(.bottom, 4)
+
+            if notificationManager.authorizationDenied {
+                Button(action: {
+                    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.notifications") {
+                        NSWorkspace.shared.open(url)
+                    }
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(.yellow)
+                        Text(L("settings.notifications_blocked"))
+                            .font(.caption)
+                            .foregroundColor(.primary)
+                            .multilineTextAlignment(.leading)
+                    }
+                    .padding(8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.yellow.opacity(0.15))
+                    .cornerRadius(6)
+                }
+                .buttonStyle(.plain)
+            }
 
             Text(L("settings.show_menubar_battery"))
                 .font(.subheadline)

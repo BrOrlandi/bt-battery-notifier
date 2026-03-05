@@ -11,6 +11,7 @@
 "settings.notify_below" = "Notificar quando bateria abaixo de:";
 "settings.notify_on_connect" = "Notificar ao conectar";
 "settings.launch_at_login" = "Abrir ao iniciar o Mac";
+"settings.notifications_blocked" = "Notificações bloqueadas. Clique para abrir as configurações do Mac.";
 "settings.quit" = "Encerrar";
 
 /* Notifications */
